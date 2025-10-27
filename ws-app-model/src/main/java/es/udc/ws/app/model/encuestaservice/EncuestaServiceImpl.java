@@ -26,8 +26,8 @@ public class EncuestaServiceImpl implements EncuestaService
     }
 
     @Override
-    public void cancelarEncuesta(long encuestaId)
-            throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException {
+    public void cancelarEncuesta(long encuestaId) throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException
+    {
 
         Optional<Encuesta> optEncuesta = encuestaDao.find(encuestaId); // Tienes que usar una conexión y la Id de la encuesta
 
