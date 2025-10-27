@@ -1,24 +1,23 @@
 package es.udc.ws.app.model.respuesta;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Entidad del modelo que representa una respuesta de un empleado.
- *
- * Correspondencia con tabla MySQL:
- *   encuesta_id      -> BIGINT (FK a encuesta.id)
- *   email            -> VARCHAR(254)
- *   positiva         -> BOOLEAN
- *   fecha_respuesta  -> DATETIME(6) (UTC)
- */
-public class Respuesta {
-
+public class Respuesta
+{
     private Long encuestaId;
     private String email;
     private boolean positiva;
-    private Instant fechaRespuesta;
+    private LocalDateTime fechaRespuesta;
 
+
+    public Respuesta(Long encuestaId, String email, boolean positiva, LocalDateTime fechaRespuesta)
+    {
+        this.encuestaId = encuestaId;
+        this.email = email;
+        this.positiva = positiva;
+        this.fechaRespuesta = fechaRespuesta;
+    }
     public Respuesta() {}
 
     public Long getEncuestaId() {
@@ -33,7 +32,7 @@ public class Respuesta {
         return positiva;
     }
 
-    public Instant getFechaRespuesta() {
+    public LocalDateTime getFechaRespuesta() {
         return fechaRespuesta;
     }
 
@@ -49,14 +48,7 @@ public class Respuesta {
         this.positiva = positiva;
     }
 
-    public void setFechaRespuesta(Instant fechaRespuesta) {
-        this.fechaRespuesta = fechaRespuesta;
-    }
-
-    public Respuesta(Long encuestaId, String email, boolean positiva, Instant fechaRespuesta) {
-        this.encuestaId = encuestaId;
-        this.email = email;
-        this.positiva = positiva;
+    public void setFechaRespuesta(LocalDateTime fechaRespuesta) {
         this.fechaRespuesta = fechaRespuesta;
     }
 

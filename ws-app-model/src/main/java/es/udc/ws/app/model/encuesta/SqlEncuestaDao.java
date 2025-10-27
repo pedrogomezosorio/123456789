@@ -1,22 +1,21 @@
 package es.udc.ws.app.model.encuesta;
 
+import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
+
+import java.sql.Connection;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 public interface SqlEncuestaDao
 {
-    public long create(Encuesta encuesta);
+    Encuesta create(Connection connection, Encuesta encuesta);
 
-    public Optional<Encuesta> findById(long id);
+    List<Encuesta> find(Connection connection, Long id) throws InstanceNotFoundException;
 
-    public List<Encuesta> findByKeyword(String keyword, boolean incluirFinalizadas);
+    List<Encuesta> findByKeywords(Connection connection, String keyword);
 
-    public void setCancelada(long id, boolean cancelada);
+    void update(Connection connection, Encuesta encuesta) throws InstanceNotFoundException;
 
-    public boolean isCancelada(long id);
-
-    public boolean isFinalizada(long id, Instant nowUtc);
-
-    public List<Encuesta> findAll();
+    void remove(Connection connection, Long encuestaId) throws InstanceNotFoundException;
 }

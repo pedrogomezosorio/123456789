@@ -8,20 +8,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implementación JDBC del DAO de Encuesta.
- *
- * Esta clase usa el DataSourceLocator del entorno ISD para obtener conexiones
- * a la base de datos (ya configurado en SimpleDataSource.properties o JNDI).
- */
-public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
-
-    private static final String DATA_SOURCE = "ws-javaexamples-ds";
-
+public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
+{
     @Override
-    public long create(Encuesta encuesta)
+    public Encuesta create(Connection connection, Encuesta encuesta)
     {
-        final String sql = "INSERT INTO encuesta (pregunta, fecha_creacion, fecha_fin, cancelada) VALUES (?, ?, ?, ?)";
+        final String sql = "INSERT INTO encuesta (id, pregunta, fecha_creacion, fecha_fin, cancelada) VALUES (?, ?, ?, ?)";
         try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
         {
@@ -34,9 +26,13 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
             preparedStatement.setBoolean(i++, encuesta.isCancelada());
 
             preparedStatement.executeUpdate();
-            try (ResultSet rs = preparedStatement.getGeneratedKeys())
+            try (ResultSet resultSet = preparedStatement.getGeneratedKeys())
             {
-                if (rs.next()) return rs.getLong(1);
+                if (resultSet.next())
+                {
+                    encuesta.setId(resultSet.getLong(1));
+                    return encuesta;
+                }
                 throw new SQLException("Error: no se devolvió el ID generado.");
             }
         }
@@ -47,7 +43,7 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
     }
 
     @Override
-    public Optional<Encuesta> findById(long id)
+    public Optional<Encuesta> find(Connection connection, long id)
     {
         final String sql = "SELECT id, pregunta, fecha_creacion, fecha_fin, cancelada FROM encuesta WHERE id=?";
         try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
@@ -55,9 +51,9 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
         {
 
             preparedStatement.setLong(1, id);
-            try (ResultSet rs = preparedStatement.executeQuery())
+            try (ResultSet resultSet = preparedStatement.executeQuery())
             {
-                if (rs.next()) return Optional.of(mapEncuesta(rs));
+                if (resultSet.next()) return Optional.of(mapEncuesta(resultSet));
                 else return Optional.empty();
             }
         }
@@ -78,10 +74,10 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
         {
 
             preparedStatement.setString(1, "%" + keyword + "%");
-            try (ResultSet rs = preparedStatement.executeQuery())
+            try (ResultSet resultSet = preparedStatement.executeQuery())
             {
                 List<Encuesta> encuestas = new ArrayList<>();
-                while (rs.next()) encuestas.add(mapEncuesta(rs));
+                while (resultSet.next()) encuestas.add(mapEncuesta(resultSet));
                 return encuestas;
             }
         }
@@ -117,9 +113,9 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
         {
 
             preparedStatement.setLong(1, id);
-            try (ResultSet rs = preparedStatement.executeQuery())
+            try (ResultSet resultSet = preparedStatement.executeQuery())
             {
-                return rs.next() && rs.getBoolean(1);
+                return resultSet.next() && resultSet.getBoolean(1);
             }
         }
         catch (SQLException e)
@@ -135,9 +131,9 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 
             preparedStatement.setLong(1, id);
-            try (ResultSet rs = preparedStatement.executeQuery()) {
-                if (!rs.next()) return false;
-                Instant fechaFin = rs.getTimestamp(1).toInstant();
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (!resultSet.next()) return false;
+                Instant fechaFin = resultSet.getTimestamp(1).toInstant();
                 return !fechaFin.isAfter(now);
             }
         } catch (SQLException e) {
@@ -150,24 +146,25 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao {
         final String sql = "SELECT id, pregunta, fecha_creacion, fecha_fin, cancelada FROM encuesta";
         try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql);
-             ResultSet rs = preparedStatement.executeQuery()) {
+             ResultSet resultSet = preparedStatement.executeQuery()) {
 
             List<Encuesta> encuestas = new ArrayList<>();
-            while (rs.next()) encuestas.add(mapEncuesta(rs));
+            while (resultSet.next()) encuestas.add(mapEncuesta(resultSet));
             return encuestas;
         } catch (SQLException e) {
             throw new RuntimeException("Error al obtener todas las encuestas: " + e.getMessage(), e);
         }
     }
 
-    private Encuesta mapEncuesta(ResultSet rs) throws SQLException
+    private Encuesta mapEncuesta(ResultSet resultSet) throws SQLException
     {
         Encuesta encuesta = new Encuesta();
-        encuesta.setId(rs.getLong("id"));
-        encuesta.setPregunta(rs.getString("pregunta"));
-        encuesta.setFechaCreacion(rs.getTimestamp("fechaCreacion").toLocalDateTime());
-        encuesta.setFechaFin(rs.getTimestamp("fechaFin").toLocalDateTime());
-        encuesta.setCancelada(rs.getBoolean("cancelada"));
+        encuesta.setId(resultSet.getLong("id"));
+        encuesta.setPregunta(resultSet.getString("pregunta"));
+        encuesta.setFechaCreacion(resultSet.getTimestamp("fecha_creacion").toLocalDateTime());
+        encuesta.setFechaFin(resultSet.getTimestamp("fecha_fin").toLocalDateTime());
+        encuesta.setCancelada(resultSet.getBoolean("cancelada"));
+        
         return encuesta;
     }
 }

@@ -2,13 +2,14 @@ package es.udc.ws.app.model.encuestaservice;
 
 import es.udc.ws.app.model.encuesta.SqlEncuestaDao;
 import es.udc.ws.app.model.encuesta.Encuesta;
-import es.udc.ws.app.model.respuesta.RespuestaDao;
+import es.udc.ws.app.model.respuesta.SqlRespuestaDao;
 import es.udc.ws.app.model.respuesta.Respuesta;
 import es.udc.ws.app.model.encuestaservice.exceptions.EncuestaCanceladaException;
 import es.udc.ws.app.model.encuestaservice.exceptions.EncuestaFinalizadaException;
 import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,9 +17,9 @@ public class EncuestaServiceImpl implements EncuestaService
 {
 
     private final SqlEncuestaDao encuestaDao;
-    private final RespuestaDao respuestaDao;
+    private final SqlRespuestaDao respuestaDao;
 
-    public EncuestaServiceImpl(SqlEncuestaDao encuestaDao, RespuestaDao respuestaDao)
+    public EncuestaServiceImpl(SqlEncuestaDao encuestaDao, SqlRespuestaDao respuestaDao)
     {
         this.encuestaDao = encuestaDao;
         this.respuestaDao = respuestaDao;
@@ -40,7 +41,7 @@ public class EncuestaServiceImpl implements EncuestaService
             throw new EncuestaCanceladaException(encuestaId);
         }
 
-        if (encuesta.estaFinalizada(Instant.now())) {
+        if (encuesta.estaFinalizada(LocalDateTime.from(Instant.now()))) {
             throw new EncuestaFinalizadaException(encuestaId);
         }
 

@@ -2,8 +2,8 @@ package es.udc.ws.app.model.encuesta;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class Encuesta {
-
+public class Encuesta
+{
     private Long id;
     private String pregunta;
     private LocalDateTime fechaCreacion;

@@ -13,36 +13,27 @@ import es.udc.ws.util.exceptions.InstanceNotFoundException;
 
 public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
 {
-
-    protected AbstractSqlEncuestaDao() {
-    }
+    protected AbstractSqlEncuestaDao() {}
 
     @Override
-    public Encuesta findById(Connection connection, Long id)
-            throws InstanceNotFoundException
+    public List<Encuesta> find(Connection connection, Long id) throws InstanceNotFoundException
     {
-
-        /* Create "queryString". */  //Cambiar esto
         String queryString = "SELECT pregunta, runtime, "
                 + " description, price, creationDate FROM ENCUESTA WHERE id = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {
 
-            /* Fill "preparedStatement". */
             int i = 1;
             preparedStatement.setLong(i++, id.longValue());
 
-            /* Execute query. */
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next())
             {
-                throw new InstanceNotFoundException(id,
-                        Encuesta.class.getName());
+                throw new InstanceNotFoundException(id, Encuesta.class.getName());
             }
 
-            /* Get results. */
 
             i = 1;
             long EncuestaId = resultSet.getLong(i++);
@@ -54,7 +45,6 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             LocalDateTime creationDate = creationDateAsTimestamp.toLocalDateTime();
             LocalDateTime endDate = creationDateAsTimestamp.toLocalDateTime();
 
-            /* Return movie. */
             return new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada);
 
         } catch (SQLException e) {
@@ -98,8 +88,7 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             /* Execute query. */
             ResultSet resultSet = preparedStatement.executeQuery();
 
-            /* Read movies. */
-            List<Encuesta> movies = new ArrayList<Encuesta>();
+            List<Encuesta> encuestas = new ArrayList<Encuesta>();
 
             while (resultSet.next()) {
 
@@ -114,11 +103,10 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
                 LocalDateTime endDate = creationDateAsTimestamp.toLocalDateTime();
 
 
-                movies.add(new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada));
+                encuestas.add(new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada));
             }
 
-            /* Return movies. */
-            return movies;
+            return encuestas;
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -127,37 +115,32 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
     }
 
     @Override
-    public void update(Connection connection, Encuesta encuesta)
-            throws InstanceNotFoundException {
+    public void update(Connection connection, Encuesta encuesta) throws InstanceNotFoundException
+    {
+        String queryString = "UPDATE encuesta "
+                + "SET pregunta = ?, fecha_creacion = ?, fecha_fin = ?, cancelada = ? "
+                + "WHERE id = ?";
 
-        /* Create "queryString". */
-        String queryString = "UPDATE Encuesta"
-                + " SET pregunta = ?, fechaCreacion = ?, fechaFin = ?, "
-                + "cancelada = ? WHERE id = ?";
-
-        try (PreparedStatement preparedStatement = connection.prepareStatement(queryString)) {
-
-            /* Fill "preparedStatement". */
+        try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
+        {
             int i = 1;
-            preparedStatement.setLong(i++, encuesta.getId());
             preparedStatement.setString(i++, encuesta.getPregunta());
-            preparedStatement.setDate(i++, java.sql.Date.valueOf(encuesta.getFechaCreacion().toLocalDate()));
-            preparedStatement.setDate(i++, java.sql.Date.valueOf(encuesta.getFechaFin().toLocalDate()));
+            preparedStatement.setTimestamp(i++, Timestamp.valueOf(encuesta.getFechaCreacion()));
+            preparedStatement.setTimestamp(i++, Timestamp.valueOf(encuesta.getFechaFin()));
             preparedStatement.setBoolean(i++, encuesta.isCancelada());
+            preparedStatement.setLong(i++, encuesta.getId());
 
-
-            /* Execute query. */
             int updatedRows = preparedStatement.executeUpdate();
 
-            if (updatedRows == 0) {
-                throw new InstanceNotFoundException(encuesta.getId(), encuesta.getPregunta());
-            }
-
-        } catch (SQLException e) {
+            if (updatedRows == 0)
+                throw new InstanceNotFoundException(encuesta.getId(), Encuesta.class.getName());
+        }
+        catch (SQLException e)
+        {
             throw new RuntimeException(e);
         }
 
-    }
+}
 
     @Override
     public void remove(Connection connection, Long encuestaId) throws InstanceNotFoundException
