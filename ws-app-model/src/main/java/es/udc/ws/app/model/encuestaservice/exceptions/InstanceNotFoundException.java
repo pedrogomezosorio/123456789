@@ -2,14 +2,15 @@ package es.udc.ws.app.model.encuestaservice.exceptions;
 
 public class InstanceNotFoundException extends Exception {
     private final Object key;
-    private final String className;
+    private final Long id;
 
-    public InstanceNotFoundException(String className, Object key) {
-        super("No se encontró la instancia de " + className + " con clave '" + key + "'");
+    public InstanceNotFoundException(Long id, Object key)
+    {
+        super("No se encontró la instancia de " + id + " con clave '" + key + "'");
         this.key = key;
-        this.className = className;
+        this.id = id;
     }
 
     public Object getKey() { return key; }
-    public String getClassName() { return className; }
+    public Long getId() { return id; }
 }

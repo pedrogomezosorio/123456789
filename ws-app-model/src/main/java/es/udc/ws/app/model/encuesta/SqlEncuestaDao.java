@@ -3,9 +3,7 @@ package es.udc.ws.app.model.encuesta;
 import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
 
 import java.sql.Connection;
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 public interface SqlEncuestaDao
 {

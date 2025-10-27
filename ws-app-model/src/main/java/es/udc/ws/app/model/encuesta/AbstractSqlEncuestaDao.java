@@ -1,5 +1,7 @@
 package es.udc.ws.app.model.encuesta;
 
+import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,7 +11,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import es.udc.ws.util.exceptions.InstanceNotFoundException;
 
 public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
 {
@@ -35,19 +36,29 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             }
 
 
-            i = 1;
-            long EncuestaId = resultSet.getLong(i++);
-            String pregunta = resultSet.getString(i++);
-            Timestamp fechaCreacion = resultSet.getTimestamp(i++);
-            Timestamp creationDateAsTimestamp = resultSet.getTimestamp(i++);
-            boolean cancelada = resultSet.getBoolean(i++);
+            List<Encuesta> encuestas = new ArrayList<Encuesta>();
 
-            LocalDateTime creationDate = creationDateAsTimestamp.toLocalDateTime();
-            LocalDateTime endDate = creationDateAsTimestamp.toLocalDateTime();
+            while (resultSet.next()) {
 
-            return new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada);
+                i = 1;
+                long EncuestaId = resultSet.getLong(i++);
+                String pregunta = resultSet.getString(i++);
+                Timestamp fechaCreacion = resultSet.getTimestamp(i++);
+                Timestamp creationDateAsTimestamp = resultSet.getTimestamp(i++);
+                boolean cancelada = resultSet.getBoolean(i++);
 
-        } catch (SQLException e) {
+                LocalDateTime creationDate = creationDateAsTimestamp.toLocalDateTime();
+                LocalDateTime endDate = creationDateAsTimestamp.toLocalDateTime();
+
+
+                encuestas.add(new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada));
+            }
+
+            return encuestas;;
+
+        }
+        catch (SQLException e)
+        {
             throw new RuntimeException(e);
         }
 
@@ -160,8 +171,7 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
 
             if (removedRows == 0)
             {
-                throw new InstanceNotFoundException(encuestaId,
-                        Encuesta.class.getName());
+                throw new InstanceNotFoundException(encuestaId, Encuesta.class.getName());
             }
         }
         catch (SQLException e)

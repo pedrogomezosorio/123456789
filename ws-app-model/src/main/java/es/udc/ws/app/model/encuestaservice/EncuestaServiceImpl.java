@@ -29,7 +29,7 @@ public class EncuestaServiceImpl implements EncuestaService
     public void cancelarEncuesta(long encuestaId)
             throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException {
 
-        Optional<Encuesta> optEncuesta = encuestaDao.findById(encuestaId);
+        Optional<Encuesta> optEncuesta = encuestaDao.find(encuestaId); // Tienes que usar una conexión y la Id de la encuesta
 
         if (optEncuesta.isEmpty()) {
             throw new InstanceNotFoundException("Encuesta", encuestaId);
@@ -45,21 +45,21 @@ public class EncuestaServiceImpl implements EncuestaService
             throw new EncuestaFinalizadaException(encuestaId);
         }
 
-        encuestaDao.setCancelada(encuestaId, true);
+        encuestaDao.setCancelada(encuestaId, true); // tienes que usar el update
     }
 
     @Override
     public List<Respuesta> obtenerRespuestas(long encuestaId, boolean soloPositivas)
             throws InstanceNotFoundException {
 
-        Optional<Encuesta> encuesta = encuestaDao.findById(encuestaId);
+        Optional<Encuesta> encuesta = encuestaDao.find(encuestaId); // tienes que usar una conexión y la id
         if (encuesta.isEmpty()) {
             throw new InstanceNotFoundException("Encuesta", encuestaId);
         }
 
         return soloPositivas
                 ? respuestaDao.findPositivasByEncuesta(encuestaId)
-                : respuestaDao.findByEncuesta(encuestaId);
+                : respuestaDao.findByEncuesta(encuestaId); // tienes que usar una conexión
     }
 
     @Override
