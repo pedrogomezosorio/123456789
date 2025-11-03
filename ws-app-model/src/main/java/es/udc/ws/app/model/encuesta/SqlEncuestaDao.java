@@ -9,9 +9,9 @@ public interface SqlEncuestaDao
 {
     Encuesta create(Connection connection, Encuesta encuesta);
 
-    List<Encuesta> find(Connection connection, Long id) throws InstanceNotFoundException;
+    Encuesta find(Connection connection, Long id) throws InstanceNotFoundException;
 
-    List<Encuesta> findByKeywords(Connection connection, String keyword);
+    List<Encuesta> findByKeyword(Connection connection, String keyword, boolean incluirPasadas);
 
     void update(Connection connection, Encuesta encuesta) throws InstanceNotFoundException;
 

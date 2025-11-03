@@ -9,21 +9,19 @@ public class Encuesta
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaFin;
     private boolean cancelada;
+    private int repuestasPositivas;
+    private int respuestasNegativas;
 
     public Encuesta() {}
 
-    public Encuesta(Long id, String pregunta, LocalDateTime fechaCreacion,
-                    LocalDateTime fechaFin, boolean cancelada) {
+    public Encuesta(Long id, String pregunta, LocalDateTime fechaCreacion, LocalDateTime fechaFin, boolean cancelada, int repuestasPositivas, int respuestasNegativas) {
         this.id = id;
         this.pregunta = pregunta;
         this.fechaCreacion = fechaCreacion;
         this.fechaFin = fechaFin;
         this.cancelada = cancelada;
-    }
-
-    /** Creador auxiliar para nuevas encuestas (sin id aún asignado). */
-    public static Encuesta nueva(String pregunta, LocalDateTime fechaFin, LocalDateTime ahora) {
-        return new Encuesta(null, pregunta, ahora, fechaFin, false);
+        this.repuestasPositivas = repuestasPositivas;
+        this.respuestasNegativas = respuestasNegativas;
     }
 
     public Long getId() {
@@ -70,22 +68,32 @@ public class Encuesta
         return !fechaFin.isAfter(ahora);
     }
 
+    public int getRepuestasPositivas() {
+        return repuestasPositivas;
+    }
+
+    public void setRepuestasPositivas(int repuestasPositivas) {
+        this.repuestasPositivas = repuestasPositivas;
+    }
+
+    public int getRespuestasNegativas() {
+        return respuestasNegativas;
+    }
+
+    public void setRespuestasNegativas(int respuestasNegativas) {
+        this.respuestasNegativas = respuestasNegativas;
+    }
+
     @Override
-    public boolean equals(Object o)
-    {
-        if (this == o) return true;
-        if (!(o instanceof Encuesta)) return false;
-        Encuesta e = (Encuesta) o;
-        return cancelada == e.cancelada &&
-                Objects.equals(id, e.id) &&
-                Objects.equals(pregunta, e.pregunta) &&
-                Objects.equals(fechaCreacion, e.fechaCreacion) &&
-                Objects.equals(fechaFin, e.fechaFin);
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Encuesta encuesta = (Encuesta) o;
+        return cancelada == encuesta.cancelada && repuestasPositivas == encuesta.repuestasPositivas && respuestasNegativas == encuesta.respuestasNegativas && Objects.equals(id, encuesta.id) && Objects.equals(pregunta, encuesta.pregunta) && Objects.equals(fechaCreacion, encuesta.fechaCreacion) && Objects.equals(fechaFin, encuesta.fechaFin);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, pregunta, fechaCreacion, fechaFin, cancelada);
+        return Objects.hash(id, pregunta, fechaCreacion, fechaFin, cancelada, repuestasPositivas, respuestasNegativas);
     }
 
     @Override
@@ -96,6 +104,8 @@ public class Encuesta
                 ", fechaCreacion=" + fechaCreacion +
                 ", fechaFin=" + fechaFin +
                 ", cancelada=" + cancelada +
+                ", repuestasPositivas=" + repuestasPositivas +
+                ", respuestasNegativas=" + respuestasNegativas +
                 '}';
     }
 }

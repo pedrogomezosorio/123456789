@@ -17,7 +17,7 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
     protected AbstractSqlEncuestaDao() {}
 
     @Override
-    public List<Encuesta> find(Connection connection, Long id) throws InstanceNotFoundException
+    public Encuesta find(Connection connection, Long id) throws InstanceNotFoundException
     {
         String queryString = "SELECT pregunta, runtime, description, price, creationDate FROM ENCUESTA WHERE id = ?";
 
@@ -30,20 +30,16 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             if (!resultSet.next())
                 throw new InstanceNotFoundException(id, Encuesta.class.getName());
 
-            List<Encuesta> encuestas = new ArrayList<Encuesta>();
+            i = 1;
+            long EncuestaId = resultSet.getLong(i++);
+            String pregunta = resultSet.getString(i++);
+            LocalDateTime creationDate = resultSet.getTimestamp(i++).toLocalDateTime();
+            LocalDateTime endDate = resultSet.getTimestamp(i++).toLocalDateTime();
+            boolean cancelada = resultSet.getBoolean(i++);
+            int postivias = resultSet.getInt(i++);
+            int negativas = resultSet.getInt(i++);
 
-            while (resultSet.next())
-            {
-                i = 1;
-                long EncuestaId = resultSet.getLong(i++);
-                String pregunta = resultSet.getString(i++);
-                LocalDateTime creationDate = resultSet.getTimestamp(i++).toLocalDateTime();
-                LocalDateTime endDate = resultSet.getTimestamp(i++).toLocalDateTime();
-                boolean cancelada = resultSet.getBoolean(i++);
-
-                encuestas.add(new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada));
-            }
-            return encuestas;
+            return new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada, postivias, negativas);
         }
         catch (SQLException e)
         {
@@ -52,45 +48,35 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
     }
 
     @Override
-    public List<Encuesta> findByKeywords(Connection connection, String keywords)
+    public List<Encuesta> findByKeyword(Connection connection, String keyword, boolean incluirPasadas)
     {
-        String[] words = keywords != null ? keywords.split(" ") : null;
-        String queryString = "SELECT id, pregunta, fechaCreacion, fechafin, cancelada FROM ENCUESTA";
-        int i;
-        if (words != null && words.length > 0)
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        String queryString = "SELECT id, pregunta, fechaCreacion, fechafin, cancelada FROM ENCUESTA WHERE LOWER(pregunta) LIKE ?";
+        if(!incluirPasadas)
         {
-            queryString += " WHERE";
-            for (i = 0; i < words.length; i++)
-            {
-                if (i > 0) 
-                    queryString += " AND";
-                queryString += " LOWER(pregunta) LIKE LOWER(?)";
-            }
+            queryString += " AND fechafin > ?";
         }
+
         queryString += " ORDER BY pregunta";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {
-            if (words != null)
-            {
-                for (i = 0; i < words.length; i++)
-                    preparedStatement.setString(i + 1, "%" + words[i] + "%");
-            }
-
             ResultSet resultSet = preparedStatement.executeQuery();
 
             List<Encuesta> encuestas = new ArrayList<Encuesta>();
 
             while (resultSet.next())
             {
-                i = 1;
+                int i = 1;
                 long EncuestaId = resultSet.getLong(i++);
                 String pregunta = resultSet.getString(i++);
                 LocalDateTime creationDate = resultSet.getTimestamp(i++).toLocalDateTime();
                 LocalDateTime endDate = resultSet.getTimestamp(i++).toLocalDateTime();
                 boolean cancelada = resultSet.getBoolean(i++);
+                int positivas = resultSet.getInt(i++);
+                int negativas = resultSet.getInt(i++);
 
-                encuestas.add(new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada));
+                encuestas.add(new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada, positivas, negativas));
             }
             return encuestas;
 

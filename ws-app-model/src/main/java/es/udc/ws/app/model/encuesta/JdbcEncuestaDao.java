@@ -1,9 +1,11 @@
 package es.udc.ws.app.model.encuesta;
 
+import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
 import es.udc.ws.util.sql.DataSourceLocator;
 
 import java.sql.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -14,8 +16,7 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
     public Encuesta create(Connection connection, Encuesta encuesta)
     {
         final String sql = "INSERT INTO encuesta (id, pregunta, fecha_creacion, fecha_fin, cancelada) VALUES (?, ?, ?, ?)";
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
         {
             int i = 1;
 
@@ -43,116 +44,76 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
     }
 
     @Override
-    public Optional<Encuesta> find(Connection connection, long id)
+    public Encuesta find(Connection connection, Long id) throws InstanceNotFoundException
     {
-        final String sql = "SELECT id, pregunta, fecha_creacion, fecha_fin, cancelada FROM encuesta WHERE id=?";
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql))
-        {
+        String queryString = "SELECT pregunta, runtime, description, price, creationDate FROM ENCUESTA WHERE id = ?";
 
-            preparedStatement.setLong(1, id);
-            try (ResultSet resultSet = preparedStatement.executeQuery())
-            {
-                if (resultSet.next()) return Optional.of(mapEncuesta(resultSet));
-                else return Optional.empty();
-            }
+        try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
+        {
+            int i = 1;
+            preparedStatement.setLong(i++, id.longValue());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next())
+                throw new InstanceNotFoundException(id, Encuesta.class.getName());
+
+            List<Encuesta> encuestas = new ArrayList<Encuesta>();
+
+            i = 1;
+            long EncuestaId = resultSet.getLong(i++);
+            String pregunta = resultSet.getString(i++);
+            LocalDateTime creationDate = resultSet.getTimestamp(i++).toLocalDateTime();
+            LocalDateTime endDate = resultSet.getTimestamp(i++).toLocalDateTime();
+            boolean cancelada = resultSet.getBoolean(i++);
+            int positivas = resultSet.getInt(i++);
+            int negativas = resultSet.getInt(i++);
+
+            return new Encuesta(EncuestaId, pregunta, creationDate, endDate, cancelada, positivas, negativas);
+
         }
         catch (SQLException e)
         {
-            throw new RuntimeException("Error al buscar encuesta: " + e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
 
+
     @Override
-    public List<Encuesta> findByKeyword(String keyword, boolean incluirFinalizadas)
+    public List<Encuesta> findByKeyword(Connection connection, String keyword, boolean incluirPasadas)
     {
         String sql = "SELECT id, pregunta, fecha_creacion, fecha_fin, cancelada FROM encuesta WHERE pregunta LIKE ?";
-        if (!incluirFinalizadas) sql += " AND fecha_fin > CURRENT_TIMESTAMP";
 
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql))
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+
+        if (!incluirPasadas)
         {
+            sql += " AND fecha_fin > ?";
+        }
 
-            preparedStatement.setString(1, "%" + keyword + "%");
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql))
+        {
+            int paramIndex = 1;
+
+            preparedStatement.setString(paramIndex++, "%" + keyword + "%");
+
+            if (!incluirPasadas)
+            {
+                preparedStatement.setObject(paramIndex, now);
+            }
+
             try (ResultSet resultSet = preparedStatement.executeQuery())
             {
                 List<Encuesta> encuestas = new ArrayList<>();
-                while (resultSet.next()) encuestas.add(mapEncuesta(resultSet));
+                while (resultSet.next())
+                {
+                    encuestas.add(mapEncuesta(resultSet));
+                }
                 return encuestas;
             }
         }
         catch (SQLException e)
         {
-            throw new RuntimeException("Error en findByKeyword: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public void setCancelada(long id, boolean cancelada)
-    {
-        final String sql = "UPDATE encuesta SET cancelada=? WHERE id=?";
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql))
-        {
-            preparedStatement.setBoolean(1, cancelada);
-            preparedStatement.setLong(2, id);
-            preparedStatement.executeUpdate();
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("Error al actualizar el estado cancelada: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public boolean isCancelada(long id)
-    {
-        final String sql = "SELECT cancelada FROM encuesta WHERE id=?";
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql))
-        {
-
-            preparedStatement.setLong(1, id);
-            try (ResultSet resultSet = preparedStatement.executeQuery())
-            {
-                return resultSet.next() && resultSet.getBoolean(1);
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("Error al consultar cancelada: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public boolean isFinalizada(long id, Instant now) {
-        final String sql = "SELECT fecha_fin FROM encuesta WHERE id=?";
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-
-            preparedStatement.setLong(1, id);
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                if (!resultSet.next()) return false;
-                Instant fechaFin = resultSet.getTimestamp(1).toInstant();
-                return !fechaFin.isAfter(now);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error en isFinalizada: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public List<Encuesta> findAll() {
-        final String sql = "SELECT id, pregunta, fecha_creacion, fecha_fin, cancelada FROM encuesta";
-        try (Connection connection = DataSourceLocator.getDataSource(DATA_SOURCE).getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql);
-             ResultSet resultSet = preparedStatement.executeQuery()) {
-
-            List<Encuesta> encuestas = new ArrayList<>();
-            while (resultSet.next()) encuestas.add(mapEncuesta(resultSet));
-            return encuestas;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todas las encuestas: " + e.getMessage(), e);
+            throw new RuntimeException("Error executing findByKeywords for keyword: " + keyword + ". Details: " + e.getMessage(), e);
         }
     }
 

@@ -5,27 +5,39 @@ import java.util.Objects;
 
 public class Respuesta
 {
-    private Long encuestaId;
+    private long encuestaId;
+
+
+    private long respuestaId;
     private String email;
     private boolean positiva;
     private LocalDateTime fechaRespuesta;
 
 
-    public Respuesta(Long encuestaId, String email, boolean positiva, LocalDateTime fechaRespuesta)
+    public Respuesta(long encuestaId, String email, boolean positiva, LocalDateTime fechaRespuesta)
     {
         this.encuestaId = encuestaId;
+        this.respuestaId = encuestaId;
         this.email = email;
         this.positiva = positiva;
         this.fechaRespuesta = fechaRespuesta;
     }
     public Respuesta() {}
 
-    public Long getEncuestaId() {
+    public long getEncuestaId() {
         return encuestaId;
     }
 
     public String getEmail() {
         return email;
+    }
+
+    public long getRespuestaId() {
+        return respuestaId;
+    }
+
+    public void setRespuestaId(long respuestaId) {
+        this.respuestaId = respuestaId;
     }
 
     public boolean isPositiva() {
@@ -36,7 +48,7 @@ public class Respuesta
         return fechaRespuesta;
     }
 
-    public void setEncuestaId(Long encuestaId) {
+    public void setEncuestaId(long encuestaId) {
         this.encuestaId = encuestaId;
     }
 
@@ -52,21 +64,16 @@ public class Respuesta
         this.fechaRespuesta = fechaRespuesta;
     }
 
-    // --- Métodos auxiliares ---
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Respuesta)) return false;
-        Respuesta r = (Respuesta) o;
-        return positiva == r.positiva &&
-                Objects.equals(encuestaId, r.encuestaId) &&
-                Objects.equals(email, r.email) &&
-                Objects.equals(fechaRespuesta, r.fechaRespuesta);
+        if (o == null || getClass() != o.getClass()) return false;
+        Respuesta respuesta = (Respuesta) o;
+        return encuestaId == respuesta.encuestaId && respuestaId == respuesta.respuestaId && positiva == respuesta.positiva && Objects.equals(email, respuesta.email) && Objects.equals(fechaRespuesta, respuesta.fechaRespuesta);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(encuestaId, email, positiva, fechaRespuesta);
+        return Objects.hash(encuestaId, respuestaId, email, positiva, fechaRespuesta);
     }
 
     @Override

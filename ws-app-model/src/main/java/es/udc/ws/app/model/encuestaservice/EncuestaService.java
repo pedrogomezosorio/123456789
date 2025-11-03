@@ -5,20 +5,21 @@ import es.udc.ws.app.model.respuesta.Respuesta;
 import es.udc.ws.app.model.encuestaservice.exceptions.EncuestaCanceladaException;
 import es.udc.ws.app.model.encuestaservice.exceptions.EncuestaFinalizadaException;
 import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
+import es.udc.ws.util.exceptions.InputValidationException;
 
 import java.util.List;
 
-/**
- * Servicio de dominio para gestionar encuestas.
- * Implementa las funcionalidades 5 y 6 del enunciado:
- *  - Cancelar encuesta.
- *  - Obtener respuestas (todas o solo positivas).
- */
-public interface EncuestaService {
+public interface EncuestaService
+{
+    /* 1 */ void crearEncuesta(Encuesta encuesta) throws InputValidationException;
 
-    void crearEncuesta(Encuesta encuesta) throws InstanceNotFoundException;
+    /* 2 */ List<Encuesta> obtenerEncuestas(long id, boolean incluirFinalizadas) throws InstanceNotFoundException;
 
-    void cancelarEncuesta(long encuestaId) throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException;
+    /* 3 */ Encuesta obtenerInformacion(long encuestaId) throws InstanceNotFoundException;
 
-    List<Respuesta> obtenerRespuestas(long encuestaId, boolean soloPositivas) throws InstanceNotFoundException;
+    /* 4 */ Encuesta responder(long encuestaId, String email, boolean voto) throws InstanceNotFoundException, EncuestaFinalizadaException, InputValidationException, EncuestaCanceladaException;
+
+    /* 5 */ void cancelarEncuesta(long encuestaId) throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException;
+
+    /* 6 */ List<Respuesta> obtenerRespuestas(long encuestaId, boolean soloPositivas) throws InstanceNotFoundException;
 }

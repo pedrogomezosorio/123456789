@@ -2,69 +2,119 @@ package es.udc.ws.app.model.encuestaservice;
 
 import es.udc.ws.app.model.encuesta.SqlEncuestaDao;
 import es.udc.ws.app.model.encuesta.Encuesta;
+import es.udc.ws.app.model.encuesta.SqlEncuestaDaoFactory;
 import es.udc.ws.app.model.respuesta.SqlRespuestaDao;
 import es.udc.ws.app.model.respuesta.Respuesta;
 import es.udc.ws.app.model.encuestaservice.exceptions.EncuestaCanceladaException;
 import es.udc.ws.app.model.encuestaservice.exceptions.EncuestaFinalizadaException;
 import es.udc.ws.app.model.encuestaservice.exceptions.InstanceNotFoundException;
+import es.udc.ws.app.model.respuesta.SqlRespuestaDaoFactory;
+import es.udc.ws.util.exceptions.InputValidationException;
+import es.udc.ws.util.sql.DataSourceLocator;
 
-import java.time.Instant;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+
+import static es.udc.ws.app.model.util.ModelConstants.APP_DATA_SOURCE;
 
 public class EncuestaServiceImpl implements EncuestaService
 {
+    private final DataSource dataSource;
+    private SqlEncuestaDao encuestaDao = null;
+    private SqlRespuestaDao respuestaDao = null;
 
-    private final SqlEncuestaDao encuestaDao;
-    private final SqlRespuestaDao respuestaDao;
-
-    public EncuestaServiceImpl(SqlEncuestaDao encuestaDao, SqlRespuestaDao respuestaDao)
+    public EncuestaServiceImpl()
     {
-        this.encuestaDao = encuestaDao;
-        this.respuestaDao = respuestaDao;
+        dataSource = DataSourceLocator.getDataSource(APP_DATA_SOURCE);
+        encuestaDao = SqlEncuestaDaoFactory.getDao();
+        respuestaDao = SqlRespuestaDaoFactory.getDao();
     }
 
     @Override
-    public void cancelarEncuesta(long encuestaId) throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException
+    public Encuesta obtenerInformacion(long encuestaId) throws InstanceNotFoundException
     {
+        /* Tiene que devolver
+            fecha y hora de la creación
+            número de empleados
+            número de respuestas afirmativas
+            número de respuestas negativas
+            si la encuesta está cancelada o no
+         */
 
-        Optional<Encuesta> optEncuesta = encuestaDao.find(encuestaId); // Tienes que usar una conexión y la Id de la encuesta
+        try(Connection connection = dataSource.getConnection())
+        {
+            Encuesta encuesta = encuestaDao.find(connection, encuestaId);
+            List<Respuesta> respuesta = respuestaDao.findByEncuesta(connection, encuestaId, false);
 
-        if (optEncuesta.isEmpty()) {
-            throw new InstanceNotFoundException("Encuesta", encuestaId);
+            int afirmativas = 0;
+            int negativas = 0;
+
+            for (Respuesta respuestaEncuesta : respuesta)
+            {
+                if(respuestaEncuesta.isPositiva()) afirmativas++;
+                else negativas++;
+            }
         }
-
-        Encuesta encuesta = optEncuesta.get();
-
-        if (encuesta.isCancelada()) {
-            throw new EncuestaCanceladaException(encuestaId);
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
         }
+    }
+    @Override
+    public void cancelarEncuesta(long encuestaId)
+            throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException {
 
-        if (encuesta.estaFinalizada(LocalDateTime.from(Instant.now()))) {
-            throw new EncuestaFinalizadaException(encuestaId);
+        try (Connection connection = dataSource.getConnection()) {
+            try {
+                connection.setAutoCommit(false);
+                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+                Encuesta e = encuestaDao.find(connection, encuestaId);
+
+                if (e.isCancelada()) {
+                    connection.rollback();
+                    throw new EncuestaCanceladaException(encuestaId);
+                }
+                LocalDateTime now = LocalDateTime.now();
+                if (!now.isBefore(e.getFechaFin())) {
+                    connection.rollback();
+                    throw new EncuestaFinalizadaException(encuestaId);
+                }
+
+                e.setCancelada(true);
+                encuestaDao.update(connection, e);
+
+                connection.commit();
+
+            } catch (InstanceNotFoundException ex) {
+                connection.rollback();
+                throw ex;
+            } catch (SQLException ex) {
+                connection.rollback();
+                throw new RuntimeException(ex);
+            } catch (RuntimeException | Error ex) {
+                connection.rollback();
+                throw ex;
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
         }
-
-        encuestaDao.setCancelada(encuestaId, true); // tienes que usar el update
     }
 
     @Override
-    public List<Respuesta> obtenerRespuestas(long encuestaId, boolean soloPositivas)
+    public java.util.List<Respuesta> obtenerRespuestas(long encuestaId, boolean soloPositivas)
             throws InstanceNotFoundException {
 
-        Optional<Encuesta> encuesta = encuestaDao.find(encuestaId); // tienes que usar una conexión y la id
-        if (encuesta.isEmpty()) {
-            throw new InstanceNotFoundException("Encuesta", encuestaId);
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setReadOnly(true); // opcional
+            encuestaDao.find(connection, encuestaId); // valida existencia
+            return respuestaDao.findByEncuesta(connection, encuestaId, soloPositivas);
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
         }
-
-        return soloPositivas
-                ? respuestaDao.findPositivasByEncuesta(encuestaId)
-                : respuestaDao.findByEncuesta(encuestaId); // tienes que usar una conexión
     }
 
-    @Override
-    public void crearEncuesta(Encuesta encuesta) throws InstanceNotFoundException
-    {
-
-    }
 }
