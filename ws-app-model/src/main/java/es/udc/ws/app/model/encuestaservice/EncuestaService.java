@@ -17,7 +17,7 @@ public interface EncuestaService
 
     /* 3 */ Encuesta obtenerInformacion(long encuestaId) throws InstanceNotFoundException;
 
-    /* 4 */ Encuesta responder(long encuestaId, String email, boolean voto) throws InstanceNotFoundException, EncuestaFinalizadaException, InputValidationException, EncuestaCanceladaException;
+    /* 4 */ Respuesta responder(long encuestaId, String email, boolean voto) throws InstanceNotFoundException, EncuestaFinalizadaException, InputValidationException, EncuestaCanceladaException;
 
     /* 5 */ void cancelarEncuesta(long encuestaId) throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException;
 

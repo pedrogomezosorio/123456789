@@ -15,7 +15,7 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
     @Override
     public Encuesta create(Connection connection, Encuesta encuesta)
     {
-        final String sql = "INSERT INTO encuesta (id, pregunta, fecha_creacion, fecha_fin, cancelada) VALUES (?, ?, ?, ?)";
+        final String sql = "INSERT INTO Encuesta(encuestaId, pregunta, fechaCreacion, fechaFin, cancelada, respuestasPositivas, respuestasNegativas) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
         {
             int i = 1;
@@ -44,14 +44,14 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
     }
 
     @Override
-    public Encuesta find(Connection connection, Long id) throws InstanceNotFoundException
+    public Encuesta find(Connection connection, long id) throws InstanceNotFoundException
     {
-        String queryString = "SELECT pregunta, runtime, description, price, creationDate FROM ENCUESTA WHERE id = ?";
+        String queryString = "SELECT encuestaId, pregunta, fechaCreacion, fechaFin, cancelada, respuestasPositivas, respuestasNegativas FROM Encuesta WHERE encuestaId = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {
             int i = 1;
-            preparedStatement.setLong(i++, id.longValue());
+            preparedStatement.setLong(i++, id);
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next())
@@ -81,13 +81,13 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
     @Override
     public List<Encuesta> findByKeyword(Connection connection, String keyword, boolean incluirPasadas)
     {
-        String sql = "SELECT id, pregunta, fecha_creacion, fecha_fin, cancelada FROM encuesta WHERE pregunta LIKE ?";
+        String sql = "SELECT encuestaId, pregunta, fechaCreacion, fechaFin, cancelada, respuestasPositivas, respuestasNegativas FROM Encuesta WHERE pregunta LIKE ?";
 
         LocalDateTime now = LocalDateTime.now().withNano(0);
 
         if (!incluirPasadas)
         {
-            sql += " AND fecha_fin > ?";
+            sql += " AND fechaFin > ?";
         }
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql))
@@ -113,19 +113,21 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
         }
         catch (SQLException e)
         {
-            throw new RuntimeException("Error executing findByKeywords for keyword: " + keyword + ". Details: " + e.getMessage(), e);
+            throw new RuntimeException("Error ejecutando findByKeyword buscando por: " + keyword + ". Detalles: " + e.getMessage(), e);
         }
     }
 
     private Encuesta mapEncuesta(ResultSet resultSet) throws SQLException
     {
         Encuesta encuesta = new Encuesta();
-        encuesta.setId(resultSet.getLong("id"));
+        encuesta.setId(resultSet.getLong("encuestaId"));
         encuesta.setPregunta(resultSet.getString("pregunta"));
-        encuesta.setFechaCreacion(resultSet.getTimestamp("fecha_creacion").toLocalDateTime());
-        encuesta.setFechaFin(resultSet.getTimestamp("fecha_fin").toLocalDateTime());
+        encuesta.setFechaCreacion(resultSet.getTimestamp("fechaCreacion").toLocalDateTime());
+        encuesta.setFechaFin(resultSet.getTimestamp("fechaFin").toLocalDateTime());
         encuesta.setCancelada(resultSet.getBoolean("cancelada"));
-        
+        encuesta.setRepuestasPositivas(resultSet.getInt("respuestasPositivas"));
+        encuesta.setRespuestasNegativas(resultSet.getInt("respuestasNegativas"));
+
         return encuesta;
     }
 }

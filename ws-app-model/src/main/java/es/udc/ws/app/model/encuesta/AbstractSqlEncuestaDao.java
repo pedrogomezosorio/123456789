@@ -17,14 +17,14 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
     protected AbstractSqlEncuestaDao() {}
 
     @Override
-    public Encuesta find(Connection connection, Long id) throws InstanceNotFoundException
+    public Encuesta find(Connection connection, long id) throws InstanceNotFoundException
     {
-        String queryString = "SELECT pregunta, runtime, description, price, creationDate FROM ENCUESTA WHERE id = ?";
+        String queryString = "SELECT pregunta, fechaCreacion, fechaFin, cancelada, respuestasPositivas, respuestasPositivas FROM Encuesta WHERE id = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {
             int i = 1;
-            preparedStatement.setLong(i++, id.longValue());
+            preparedStatement.setLong(i++, id);
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next())
@@ -46,24 +46,27 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             throw new RuntimeException(e);
         }
     }
-
     @Override
     public List<Encuesta> findByKeyword(Connection connection, String keyword, boolean incluirPasadas)
     {
         LocalDateTime now = LocalDateTime.now().withNano(0);
-        String queryString = "SELECT id, pregunta, fechaCreacion, fechafin, cancelada FROM ENCUESTA WHERE LOWER(pregunta) LIKE ?";
+        String queryString = "SELECT encuestaId, pregunta, fechaCreacion, fechaFin, cancelada, respuestasPositivas, respuestasNegativas FROM Encuesta WHERE pregunta LIKE ?";
         if(!incluirPasadas)
         {
-            queryString += " AND fechafin > ?";
+            queryString += " AND fechaFin > ?";
         }
 
         queryString += " ORDER BY pregunta";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {
+            preparedStatement.setString(1, "%" + keyword + "%");
+
+            if(!incluirPasadas)  preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(now));
+
             ResultSet resultSet = preparedStatement.executeQuery();
 
-            List<Encuesta> encuestas = new ArrayList<Encuesta>();
+            List<Encuesta> encuestas = new ArrayList<>();
 
             while (resultSet.next())
             {
@@ -90,7 +93,7 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
     @Override
     public void update(Connection connection, Encuesta encuesta) throws InstanceNotFoundException
     {
-        String queryString = "UPDATE encuesta SET pregunta = ?, fecha_creacion = ?, fecha_fin = ?, cancelada = ? WHERE id = ?";
+        String queryString = "UPDATE Encuesta SET pregunta = ?, fechaCreacion = ?, fechaFin = ?, cancelada = ?, respuestasPositivas = ?, respuestasNegativas = ? WHERE encuestaId = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {
@@ -99,6 +102,8 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             preparedStatement.setTimestamp(i++, Timestamp.valueOf(encuesta.getFechaCreacion()));
             preparedStatement.setTimestamp(i++, Timestamp.valueOf(encuesta.getFechaFin()));
             preparedStatement.setBoolean(i++, encuesta.isCancelada());
+            preparedStatement.setInt(i++, encuesta.getRepuestasPositivas());
+            preparedStatement.setInt(i++, encuesta.getRepuestasPositivas());
             preparedStatement.setLong(i++, encuesta.getId());
 
             int updatedRows = preparedStatement.executeUpdate();
@@ -111,12 +116,12 @@ public abstract class AbstractSqlEncuestaDao implements SqlEncuestaDao
             throw new RuntimeException(e);
         }
 
-}
+    }
 
     @Override
-    public void remove(Connection connection, Long encuestaId) throws InstanceNotFoundException
+    public void remove(Connection connection, long encuestaId) throws InstanceNotFoundException
     {
-        String queryString = "DELETE FROM ENCUESTA WHERE " + " id = ?";
+        String queryString = "DELETE FROM Encuesta WHERE " + " encuestaId = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(queryString))
         {

@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class Encuesta
 {
-    private Long id;
+    private long id;
     private String pregunta;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaFin;
@@ -14,7 +14,7 @@ public class Encuesta
 
     public Encuesta() {}
 
-    public Encuesta(Long id, String pregunta, LocalDateTime fechaCreacion, LocalDateTime fechaFin, boolean cancelada, int repuestasPositivas, int respuestasNegativas) {
+    public Encuesta(long id, String pregunta, LocalDateTime fechaCreacion, LocalDateTime fechaFin, boolean cancelada, int repuestasPositivas, int respuestasNegativas) {
         this.id = id;
         this.pregunta = pregunta;
         this.fechaCreacion = fechaCreacion;
@@ -24,11 +24,11 @@ public class Encuesta
         this.respuestasNegativas = respuestasNegativas;
     }
 
-    public Long getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(long id) {
         this.id = id;
     }
 

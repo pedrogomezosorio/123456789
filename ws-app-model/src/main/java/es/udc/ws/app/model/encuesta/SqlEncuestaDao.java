@@ -9,11 +9,11 @@ public interface SqlEncuestaDao
 {
     Encuesta create(Connection connection, Encuesta encuesta);
 
-    Encuesta find(Connection connection, Long id) throws InstanceNotFoundException;
+    Encuesta find(Connection connection, long respuestaId) throws InstanceNotFoundException;
 
     List<Encuesta> findByKeyword(Connection connection, String keyword, boolean incluirPasadas);
 
     void update(Connection connection, Encuesta encuesta) throws InstanceNotFoundException;
 
-    void remove(Connection connection, Long encuestaId) throws InstanceNotFoundException;
+    void remove(Connection connection, long respuestaId) throws InstanceNotFoundException;
 }

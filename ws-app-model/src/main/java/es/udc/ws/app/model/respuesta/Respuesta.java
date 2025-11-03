@@ -6,18 +6,16 @@ import java.util.Objects;
 public class Respuesta
 {
     private long encuestaId;
-
-
     private long respuestaId;
     private String email;
     private boolean positiva;
     private LocalDateTime fechaRespuesta;
 
 
-    public Respuesta(long encuestaId, String email, boolean positiva, LocalDateTime fechaRespuesta)
+    public Respuesta(long respuestaId, long encuestaId, String email, boolean positiva, LocalDateTime fechaRespuesta)
     {
+        this.respuestaId = respuestaId;
         this.encuestaId = encuestaId;
-        this.respuestaId = encuestaId;
         this.email = email;
         this.positiva = positiva;
         this.fechaRespuesta = fechaRespuesta;
