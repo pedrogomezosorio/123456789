@@ -130,4 +130,19 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
 
         return encuesta;
     }
+    @Override
+    public long countPositivas(Connection connection, Long encuestaId) {
+        // TODO: Arreglar esto para que use la 'connection' recibida
+        String sql = "SELECT COUNT(*) FROM Respuesta WHERE encuesta_id=? AND positiva=TRUE";
+        // ... (Implementa la lógica SQL, ¡usando la 'connection'!)
+        throw new UnsupportedOperationException("countPositivas no implementado");
+    }
+
+    @Override
+    public long countNegativas(Connection connection, Long encuestaId) {
+        // TODO: Arreglar esto para que use la 'connection' recibida
+        String sql = "SELECT COUNT(*) FROM Respuesta WHERE encuesta_id=? AND positiva=FALSE";
+        // ... (Implementa la lógica SQL, ¡usando la 'connection'!)
+        throw new UnsupportedOperationException("countNegativas no implementado");
+    }
 }

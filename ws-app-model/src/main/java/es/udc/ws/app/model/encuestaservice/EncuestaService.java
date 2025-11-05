@@ -13,7 +13,7 @@ public interface EncuestaService
 {
     /* 1 */ void crearEncuesta(Encuesta encuesta) throws InputValidationException;
 
-    /* 2 */ List<Encuesta> obtenerEncuestas(long id, boolean incluirFinalizadas) throws InstanceNotFoundException;
+    /* 2 */ List<Encuesta> obtenerEncuestas(String keywords, boolean incluirPasadas) throws InstanceNotFoundException;
 
     /* 3 */ Encuesta obtenerInformacion(long encuestaId) throws InstanceNotFoundException;
 

@@ -86,10 +86,39 @@ public class EncuestaServiceImpl implements EncuestaService
         }
     }
 
-    @Override
-    public List<Encuesta> obtenerEncuestas(long id, boolean incluirFinalizadas) throws InstanceNotFoundException {
-        return List.of();
-    }
+
+     @Override
+      public List<Encuesta> obtenerEncuestas(String keywords, boolean incluirPasadas)
+              throws InstanceNotFoundException {
+
+          String effectiveKeywords = (keywords == null) ? "" : keywords;
+
+          try (Connection connection = dataSource.getConnection()) {
+
+              // 1. Llamar al DAO de Encuesta (pasando Connection)
+              // Llama al método findByKeyword que ya existe en tu DAO
+              List<Encuesta> encuestas = encuestaDao.findByKeyword(connection, effectiveKeywords, incluirPasadas);
+
+
+              for (Encuesta encuesta : encuestas) {
+
+
+                  long positivas = encuestaDao.countPositivas(connection, encuesta.getId());
+                  long negativas = encuestaDao.countNegativas(connection, encuesta.getId());
+                  // -------------------------
+
+                  // Modificamos el objeto Encuesta con los contadores calculados
+                  encuesta.setRepuestasPositivas((int) positivas);
+                  encuesta.setRespuestasNegativas((int) negativas);
+              }
+
+              return encuestas; // Devuelve la lista de Encuestas (modificadas)
+
+          } catch (SQLException e) {
+              // Error al obtener/cerrar la conexión o al llamar a los DAOs
+              throw new RuntimeException(e);
+          }
+      }
 
     @Override
     public Encuesta obtenerInformacion(long encuestaId) throws InstanceNotFoundException
@@ -205,6 +234,41 @@ public class EncuestaServiceImpl implements EncuestaService
     @Override
     public void cancelarEncuesta(long encuestaId) throws InstanceNotFoundException, EncuestaFinalizadaException, EncuestaCanceladaException {
 
+        try (Connection connection = dataSource.getConnection()) {
+            try {
+                connection.setAutoCommit(false);
+                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+                Encuesta e = encuestaDao.find(connection, encuestaId);
+
+                if (e.isCancelada()) {
+                    connection.rollback();
+                    throw new EncuestaCanceladaException(encuestaId);
+                }
+                LocalDateTime now = LocalDateTime.now();
+                if (!now.isBefore(e.getFechaFin())) {
+                    connection.rollback();
+                    throw new EncuestaFinalizadaException(encuestaId);
+                }
+
+                e.setCancelada(true);
+                encuestaDao.update(connection, e);
+
+                connection.commit();
+
+            } catch (InstanceNotFoundException e) {
+                connection.commit();
+                throw e;
+            } catch (SQLException e) {
+                connection.rollback();
+                throw new RuntimeException(e);
+            } catch (RuntimeException | Error e) {
+                connection.rollback();
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

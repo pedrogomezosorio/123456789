@@ -16,4 +16,8 @@ public interface SqlEncuestaDao
     void update(Connection connection, Encuesta encuesta) throws InstanceNotFoundException;
 
     void remove(Connection connection, long respuestaId) throws InstanceNotFoundException;
+
+    long countPositivas(Connection connection, Long encuestaId);
+
+    long countNegativas(Connection connection, Long encuestaId);
 }
