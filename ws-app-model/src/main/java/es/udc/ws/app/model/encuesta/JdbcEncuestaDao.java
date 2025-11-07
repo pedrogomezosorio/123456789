@@ -25,6 +25,8 @@ public class JdbcEncuestaDao extends AbstractSqlEncuestaDao
             preparedStatement.setTimestamp(i++, Timestamp.valueOf(encuesta.getFechaCreacion()));
             preparedStatement.setTimestamp(i++, Timestamp.valueOf(encuesta.getFechaFin()));
             preparedStatement.setBoolean(i++, encuesta.isCancelada());
+            preparedStatement.setInt(i++, encuesta.getRepuestasPositivas());
+            preparedStatement.setInt(i++, encuesta.getRespuestasNegativas());
 
             preparedStatement.executeUpdate();
             try (ResultSet resultSet = preparedStatement.getGeneratedKeys())

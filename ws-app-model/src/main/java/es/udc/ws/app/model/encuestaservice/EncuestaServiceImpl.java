@@ -236,18 +236,23 @@ public class EncuestaServiceImpl implements EncuestaService
 
         try (Connection connection = dataSource.getConnection()) {
             try {
-                connection.setAutoCommit(false);
                 connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                connection.setAutoCommit(false);
 
                 Encuesta e = encuestaDao.find(connection, encuestaId);
 
+
+                if (e == null) {               
+                    connection.commit();
+                    throw new InstanceNotFoundException(encuestaId, Encuesta.class.getName());
+                }
                 if (e.isCancelada()) {
-                    connection.rollback();
+                    connection.commit();
                     throw new EncuestaCanceladaException(encuestaId);
                 }
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = LocalDateTime.now().withNano(0);
                 if (!now.isBefore(e.getFechaFin())) {
-                    connection.rollback();
+                    connection.commit();
                     throw new EncuestaFinalizadaException(encuestaId);
                 }
 
@@ -256,18 +261,23 @@ public class EncuestaServiceImpl implements EncuestaService
 
                 connection.commit();
 
-            } catch (InstanceNotFoundException e) {
+            } catch (InstanceNotFoundException ex) {
                 connection.commit();
-                throw e;
-            } catch (SQLException e) {
+                throw ex;
+            } catch (SQLException ex) {
                 connection.rollback();
-                throw new RuntimeException(e);
-            } catch (RuntimeException | Error e) {
+                throw new RuntimeException(ex);
+            } catch (RuntimeException | Error ex) {
                 connection.rollback();
-                throw e;
+                throw ex;
+            }finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException ignore) {}
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
